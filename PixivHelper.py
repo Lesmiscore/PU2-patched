@@ -153,6 +153,8 @@ def make_filename(nameFormat, imageInfo, artistInfo=None, tagsSeparator=' ', tag
         imageExtension = splittedUrl[1]
         imageExtension = imageExtension.split('?')[0]
 
+    imageFile = re.sub(r'_p(\d+)', lambda x: '_p%03d' % int(x.group(1)), imageFile)
+
     # artist related
     nameFormat = nameFormat.replace('%artist%', replace_path_separator(artistInfo.artistName))
     nameFormat = nameFormat.replace('%member_id%', str(artistInfo.artistId))
