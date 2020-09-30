@@ -4,10 +4,7 @@ on:
   schedule:
     - cron: "0 */12 * * *"
   workflow_dispatch:
-    inputs:
-      logLevel:
-        description: 'test'
-        default: 'warning'
+    inputs: {}
 
 jobs:
   merge:
