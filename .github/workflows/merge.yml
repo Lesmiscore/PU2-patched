@@ -3,6 +3,11 @@ name: Merge upstream
 on:
   schedule:
     - cron: "0 */12 * * *"
+  workflow_dispatch:
+    inputs:
+      logLevel:
+        description: 'test'
+        default: 'warning'
 
 jobs:
   merge:
