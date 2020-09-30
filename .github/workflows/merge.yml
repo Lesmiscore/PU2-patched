@@ -1,0 +1,23 @@
+name: Merge upstream
+
+on:
+  schedule:
+    - cron: "0 */12 * * *"
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: Configure git
+      run: |
+        git config --global pull.rebase false
+        git config --global core.editor true
+        git config --global user.name nao20010128nao
+        git config --global user.email nao20010128@gmail.com
+    - name: Pull from ytdl-org/youtube-dl
+      run: |
+        git pull https://github.com/Nandaka/PixivUtil2
+    - name: Push to here
+      run: |
+        git push https://nao20010128nao:${{ secrets.GH_PAT }}@github.com/nao20010128nao/PU2-patched.git HEAD:master
