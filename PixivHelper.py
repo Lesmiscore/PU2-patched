@@ -308,17 +308,13 @@ def safePrint(msg, newline=True, end=None):
 
 
 def set_console_title(title):
-    if os.name == 'nt':
-        subprocess.call('title' + ' ' + title, shell=True)
-    else:
-        sys.stdout.write("\x1b]2;" + title + "\x07")
+    # don't change title
+    pass
 
 
 def clearScreen():
-    if os.name == 'nt':
-        subprocess.call('cls', shell=True)
-    else:
-        subprocess.call('clear', shell=True)
+    # don't clear screen
+    pass
 
 
 def start_irfanview(dfilename, irfanViewPath, start_irfan_slide=False, start_irfan_view=False):
