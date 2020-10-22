@@ -5,9 +5,12 @@ import json
 import os
 import unittest
 
+import PixivConstant
 import PixivHelper
 from PixivArtist import PixivArtist
 from PixivException import PixivException
+
+PixivConstant.PIXIVUTIL_LOG_FILE = 'pixivutil.test.log'
 
 
 class TestPixivModel_WhiteCube(unittest.TestCase):
@@ -80,7 +83,7 @@ class TestPixivModel_WhiteCube(unittest.TestCase):
         member.ParseInfo(info, False, False)
 
         member.PrintInfo()
-        self.assertEqual(member.totalImages, 227)
+        self.assertEqual(member.totalImages, 233)
         self.assertTrue(member.isLastPage)
         self.assertEqual(member.artistId, 14095911)
         self.assertTrue(member.haveImages)
@@ -109,7 +112,7 @@ class TestPixivModel_WhiteCube(unittest.TestCase):
         member.ParseInfo(info, False, False)
 
         member.PrintInfo()
-        self.assertEqual(member.totalImages, 129)
+        self.assertEqual(member.totalImages, 134)
         self.assertTrue(member.isLastPage)
         self.assertEqual(member.artistId, 14095911)
         self.assertTrue(member.haveImages)

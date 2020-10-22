@@ -5,13 +5,17 @@ import unittest
 
 from bs4 import BeautifulSoup
 
+import PixivConstant
+from PixivArtist import PixivArtist
+from PixivBookmark import PixivBookmark, PixivNewIllustBookmark
 from PixivBrowserFactory import PixivBrowser
 from PixivException import PixivException
-from PixivArtist import PixivArtist
+from PixivGroup import PixivGroup
 from PixivImage import PixivImage
 from PixivTags import PixivTags
-from PixivGroup import PixivGroup
-from PixivBookmark import PixivBookmark, PixivNewIllustBookmark
+
+PixivConstant.PIXIVUTIL_LOG_FILE = 'pixivutil.test.log'
+last_page = 52
 
 
 class MockPixivBrowser(PixivBrowser):
@@ -459,7 +463,7 @@ class TestPixivBookmark(unittest.TestCase):
         page = p.read()
         result = PixivBookmark.parseImageBookmark(page)
 
-        self.assertEqual(len(result), 18)
+        self.assertEqual(len(result), 19)
         self.assertTrue(35303260 in result)
         self.assertTrue(28629066 in result)
         self.assertTrue(27249307 in result)
@@ -525,7 +529,7 @@ class TestPixivTags(unittest.TestCase):
 
         self.assertEqual(len(image.itemList), 60)
         self.assertEqual(image.isLastPage, False)
-        self.assertEqual(image.availableImages, 2292)
+        self.assertEqual(image.availableImages, 2298)
 
     # tags.php?tag=%E3%81%93%E3%81%AE%E4%B8%AD%E3%81%AB1%E4%BA%BA%E3%80%81%E5%A6%B9%E3%81%8C%E3%81%84%E3%82%8B%21
     def testTagsSearchExact(self):
@@ -547,10 +551,9 @@ class TestPixivTags(unittest.TestCase):
         p = open(path, 'r', encoding="utf-8")
         response = p.read()
         tags = ''
-        current_page = 51
 
         image = PixivTags()
-        image.parseTags(response, tags, current_page)
+        image.parseTags(response, tags, last_page)
 
         print(image.itemList[-1])
         self.assertEqual(image.isLastPage, True)
