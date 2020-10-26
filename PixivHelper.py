@@ -288,9 +288,8 @@ def make_filename(nameFormat: str,
     else:
         nameFormat = nameFormat.replace('%image_response_count%', '')
 
-    # clean up double space
-    while nameFormat.find('  ') > -1:
-        nameFormat = nameFormat.replace('  ', ' ')
+    # clean up multiple spaces
+    nameFormat = re.sub(r' +', ' ', nameFormat)
 
     if appendExtension:
         nameFormat = nameFormat.strip() + '.' + imageExtension
