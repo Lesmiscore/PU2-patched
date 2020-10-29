@@ -57,7 +57,7 @@ class TestPixivHelper(unittest.TestCase):
 
         expected = "D:\\Temp\\Pixiv2\\267014 balzehn\\R-18 2493913_p0 - アラクネのいる日常２.jpg"
         if platform.system() != 'Windows':
-            expected = "/home/travis/build/Nandaka/PixivUtil2/267014 balzehn/R-18 2493913_p0 - アラクネのいる日常２.jpg"
+            expected = "/home/travis/build/Nandaka/PixivUtil2/267014 balzehn/R-18 002493913_p000 - アラクネのいる日常２.jpg"
 
         result = PixivHelper.sanitize_filename(filename, rootDir)
 
@@ -80,7 +80,7 @@ class TestPixivHelper(unittest.TestCase):
 
         nameFormat = '%member_token% (%member_id%)\\%urlFilename% %page_number% %works_date_only% %works_res% %works_tools% %title%'
 
-        expected = u'maidoll (554800)\\28865189_p0 001 2012-07-22 Multiple images: 2P C82おまけ本 「沙耶は俺の嫁」サンプル.jpg'
+        expected = u'maidoll (554800)\\028865189_p000 001 2012-07-22 Multiple images: 2P C82おまけ本 「沙耶は俺の嫁」サンプル.jpg'
         result = PixivHelper.make_filename(nameFormat,
                                            imageInfo,
                                            artistInfo=None,
@@ -89,7 +89,7 @@ class TestPixivHelper(unittest.TestCase):
         # print(result)
         self.assertEqual(result, expected)
 
-        expected = u'maidoll (554800)\\28865189_p14 015 2012-07-22 Multiple images: 2P C82おまけ本 「沙耶は俺の嫁」サンプル.jpg'
+        expected = u'maidoll (554800)\\028865189_p014 015 2012-07-22 Multiple images: 2P C82おまけ本 「沙耶は俺の嫁」サンプル.jpg'
         result = PixivHelper.make_filename(nameFormat,
                                            imageInfo,
                                            artistInfo=None,
@@ -98,7 +98,7 @@ class TestPixivHelper(unittest.TestCase):
         # print(result)
         self.assertEqual(result, expected)
 
-        expected = u'maidoll (554800)\\28865189_p921 922 2012-07-22 Multiple images: 2P C82おまけ本 「沙耶は俺の嫁」サンプル.jpg'
+        expected = u'maidoll (554800)\\028865189_p921 922 2012-07-22 Multiple images: 2P C82おまけ本 「沙耶は俺の嫁」サンプル.jpg'
         result = PixivHelper.make_filename(nameFormat,
                                            imageInfo,
                                            artistInfo=None,
