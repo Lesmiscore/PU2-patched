@@ -31,7 +31,7 @@ from colorama import Fore, Style
 
 import PixivConstant
 from PixivArtist import PixivArtist
-from PixivImage import PixivImage, PixivMangaSeries
+from PixivImage import PixivImage
 from PixivModelFanbox import FanboxArtist, FanboxPost
 
 logger = None
@@ -885,15 +885,19 @@ def ugoira2webm(ugoira_file,
     d = tempfile.mkdtemp(prefix="ugoira2webm")
     d = d.replace(os.sep, '/')
 
+    if exportname is None or len(exportname) == 0:
+        name = '.'.join(ugoira_file.split('.')[:-1])
+        exportname = f"{os.path.basename(name)}.{extension}"
+
+    tempname = d + "/temp." + extension
+
+    cmd = f"{ffmpeg} -y -i \"{d}/i.ffconcat\" -c:v {codec} {param} \"{tempname}\""
+    if codec is None:
+        cmd = f"{ffmpeg} -y -i \"{d}/i.ffconcat\" {param} \"{tempname}\""
+
     try:
         frames = {}
         ffconcat = "ffconcat version 1.0\n"
-
-        if exportname is None or len(exportname) == 0:
-            name = '.'.join(ugoira_file.split('.')[:-1])
-            exportname = f"{os.path.basename(name)}.{extension}"
-
-        tempname = d + "/temp." + extension
 
         with zipfile.ZipFile(ugoira_file) as f:
             f.extractall(d)
@@ -910,10 +914,6 @@ def ugoira2webm(ugoira_file,
 
         with open(d + "/i.ffconcat", "w") as f:
             f.write(ffconcat)
-
-        cmd = f"{ffmpeg} -y -i \"{d}/i.ffconcat\" -c:v {codec} {param} \"{tempname}\""
-        if codec is None:
-            cmd = f"{ffmpeg} -y -i \"{d}/i.ffconcat\" {param} \"{tempname}\""
 
         ffmpeg_args = shlex.split(cmd)
         get_logger().info(f"[ugoira2webm()] running with cmd: {cmd}")
