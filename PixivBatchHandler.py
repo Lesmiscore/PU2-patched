@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 
+import json
 import os
-
-import demjson
+from copy import deepcopy
 
 import PixivArtistHandler
+import PixivConfig
 import PixivHelper
 import PixivImageHandler
 import PixivTagsHandler
@@ -14,50 +15,19 @@ _default_batch_filename = "./batch_job.json"
 
 
 class JobOption(object):
-    filenameFormat = ""
-    filenameMangaFormat = ""
-    filenameInfoFormat = ""
-    filenameMangaInfoFormat = ""
-    avatarNameFormat = ""
-    rootDirectory = ""
-    useTagsAsDir = False
-    r18mode = False
-    extensionFilter = None
+    config = PixivConfig.ConfigItem
 
     def __init__(self, job, _config):
         if _config is None:
             raise Exception("Cannot get default configuration, aborting...")
+
         # set default option from config
-        self.filenameFormat = _config.filenameFormat
-        self.filenameMangaFormat = _config.filenameMangaFormat
-        self.filenameInfoFormat = _config.filenameInfoFormat
-        self.filenameMangaInfoFormat = _config.filenameMangaInfoFormat
-        self.avatarNameFormat = _config.avatarNameFormat
-        self.rootDirectory = _config.rootDirectory
-        self.useTagsAsDir = _config.useTagsAsDir
-        self.r18mode = _config.r18mode
+        self.config = deepcopy(_config)
 
         if "option" in job and job["option"] is not None:
-            # need to check if the job option exists for each option
             option_data = job["option"]
-            if "filenameFormat" in option_data:
-                self.filenameFormat = option_data["filenameFormat"]
-            if "filenameMangaFormat" in option_data:
-                self.filenameMangaFormat = option_data["filenameMangaFormat"]
-            if "filenameInfoFormat" in option_data:
-                self.filenameInfoFormat = option_data["filenameInfoFormat"]
-            if "filenameMangaInfoFormat" in option_data:
-                self.filenameMangaInfoFormat = option_data["filenameMangaInfoFormat"]
-            if "avatarNameFormat" in option_data:
-                self.avatarNameFormat = option_data["avatarNameFormat"]
-            if "rootDirectory" in option_data:
-                self.rootDirectory = option_data["rootDirectory"]
-            if "useTagsAsDir" in option_data:
-                self.useTagsAsDir = option_data["useTagsAsDir"]
-            if "r18mode" in option_data:
-                self.r18mode = option_data["r18mode"]
-            if "extensionFilter" in option_data:
-                self.extensionFilter = option_data["extensionFilter"]
+            for option in option_data:
+                self.config.__setattr__(option, option_data[option])
 
 
 def handle_members(caller, job, job_name, job_option):
@@ -87,15 +57,14 @@ def handle_members(caller, job, job_name, job_option):
 
     for member_id in member_ids:
         PixivArtistHandler.process_member(caller,
-                                          caller.__config__,
+                                          job_option.config,
                                           member_id=member_id,
-                                          user_dir=job_option.rootDirectory,
+                                          user_dir=job_option.config.rootDirectory,
                                           page=start_page,
                                           end_page=end_page,
                                           bookmark=from_bookmark,
                                           tags=tags,
-                                          title_prefix=job_name,
-                                          job_option=job_option)
+                                          title_prefix=f"{job_name} ")
 
 
 def handle_images(caller: PixivUtil2, job, job_name, job_option):
@@ -112,19 +81,20 @@ def handle_images(caller: PixivUtil2, job, job_name, job_option):
 
     for image_id in image_ids:
         PixivImageHandler.process_image(caller,
-                                        caller.__config__,
+                                        job_option.config,
                                         image_id=image_id,
-                                        user_dir=job_option.rootDirectory,
-                                        title_prefix=job_name,
-                                        job_option=job_option)
+                                        user_dir=job_option.config.rootDirectory,
+                                        title_prefix=f"{job_name} ")
     print("done.")
 
 
 def handle_tags(caller: PixivUtil2, job, job_name, job_option):
+    tags = None
     if "tags" in job and len(job["tags"]) > 0:
         tags = job["tags"]
     else:
         print(f"No tags found or empty tags in {job_name}!")
+        return
 
     start_page = 1
     if "start_page" in job:
@@ -182,12 +152,12 @@ def handle_tags(caller: PixivUtil2, job, job_name, job_option):
                                   title_caption=title_caption,
                                   start_date=start_date,
                                   end_date=end_date,
-                                  use_tags_as_dir=job_option.useTagsAsDir,
+                                  use_tags_as_dir=job_option.config.useTagsAsDir,
                                   member_id=member_id,
                                   bookmark_count=bookmark_count,
                                   sort_order=sort_order,
                                   type_mode=type_mode,
-                                  job_option=job_option)
+                                  config=job_option.config)
 
 
 def process_batch_job(caller: PixivUtil2, batch_file=None):
@@ -200,18 +170,23 @@ def process_batch_job(caller: PixivUtil2, batch_file=None):
     batch_file = os.path.abspath(batch_file)
 
     if os.path.exists(batch_file):
-        jobs_file = open(_default_batch_filename, encoding="utf-8")
-        jobs = demjson.decode(jobs_file.read())
+        jobs_file = open(batch_file, encoding="utf-8")
+        jobs = json.load(jobs_file)
+
+        total_job = len(jobs["jobs"])
+        active_job = len([y for y in jobs["jobs"] if jobs["jobs"][y]["enabled"]])
+        PixivHelper.print_and_log("info", f"Found {active_job} active job(s) of {total_job} jobs from {batch_file}.")
+
         for job_name in jobs["jobs"]:
-            print(f"Processing {job_name}")
+            PixivHelper.print_and_log("info", f"Processing {job_name}")
             curr_job = jobs["jobs"][job_name]
 
             if "enabled" not in curr_job or not bool(curr_job["enabled"]):
-                print(f"Skipping {job_name} because not enabled.")
+                PixivHelper.print_and_log("warn", f"Skipping {job_name} because not enabled.")
                 continue
 
             if "job_type" not in curr_job:
-                print(f"Cannot find job_type in {job_name}")
+                PixivHelper.print_and_log("error", f"Cannot find job_type in {job_name}")
                 continue
 
             job_option = JobOption(curr_job, caller.__config__)
@@ -222,9 +197,9 @@ def process_batch_job(caller: PixivUtil2, batch_file=None):
             elif curr_job["job_type"] == '3':
                 handle_tags(caller, curr_job, job_name, job_option)
             else:
-                print(f"Unsupported job_type {curr_job['job_type']} in {job_name}")
+                PixivHelper.print_and_log("error", f"Unsupported job_type {curr_job['job_type']} in {job_name}")
     else:
-        print(f"Cannot found {batch_file}, see https://github.com/Nandaka/PixivUtil2/wiki/Using-Batch-Job-(Experimental) for example. ")
+        PixivHelper.print_and_log("error", f"Cannot found {batch_file}, see https://github.com/Nandaka/PixivUtil2/wiki/Using-Batch-Job-(Experimental) for example. ")
 
     # restore original method
     # PixivHelper.print_and_log = temp_printer
