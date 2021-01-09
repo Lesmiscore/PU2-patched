@@ -276,8 +276,11 @@ def make_filename(nameFormat: str,
 
     if imageInfo.bookmark_count > 0:
         nameFormat = nameFormat.replace('%bookmark_count%', str(imageInfo.bookmark_count))
+        if '%bookmarks_group%' in nameFormat:
+            nameFormat = nameFormat.replace('%bookmarks_group%', calculate_group(imageInfo.bookmark_count))
     else:
         nameFormat = nameFormat.replace('%bookmark_count%', '')
+        nameFormat = nameFormat.replace('%bookmarks_group%', '')
 
     if imageInfo.image_response_count > 0:
         nameFormat = nameFormat.replace('%image_response_count%', str(imageInfo.image_response_count))
@@ -291,6 +294,24 @@ def make_filename(nameFormat: str,
         nameFormat = nameFormat.strip() + '.' + imageExtension
 
     return nameFormat.strip()
+
+
+def calculate_group(count):
+    # follow rules from https://dic.pixiv.net/a/users%E5%85%A5%E3%82%8A
+    if count >= 100 and count < 250:
+        return '100'
+    elif count >= 250 and count < 500:
+        return '250'
+    elif count >= 500 and count < 1000:
+        return '500'
+    elif count >= 1000 and count < 5000:
+        return '1000'
+    elif count >= 5000 and count < 10000:
+        return '5000'
+    elif count >= 10000:
+        return '10000'
+    else:
+        return ''
 
 
 def safePrint(msg, newline=True, end=None):
@@ -850,11 +871,13 @@ def write_url_in_description(image, blacklistRegex, filenamePattern):
 def ugoira2gif(ugoira_file, exportname, fmt='gif', image=None):
     print_and_log('info', 'processing ugoira to animated gif...')
     # Issue #802 use ffmpeg to convert to gif
+    if len(_config.gifParam) == 0:
+        _config.gifParam = "-filter_complex \"[0:v]split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle\""
     ugoira2webm(ugoira_file,
                 exportname,
                 ffmpeg=_config.ffmpeg,
                 codec=None,
-                param="-filter_complex \"[0:v]split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle\"",
+                param=_config.gifParam,
                 extension="gif",
                 image=image)
 
@@ -862,11 +885,13 @@ def ugoira2gif(ugoira_file, exportname, fmt='gif', image=None):
 def ugoira2apng(ugoira_file, exportname, image=None):
     print_and_log('info', 'processing ugoira to apng...')
     # fix #796 convert apng using ffmpeg
+    if len(_config.apngParam) == 0:
+        _config.apngParam = "-vf \"setpts=PTS-STARTPTS,hqdn3d=1.5:1.5:6:6\" -plays 0"
     ugoira2webm(ugoira_file,
                 exportname,
                 ffmpeg=_config.ffmpeg,
                 codec="apng",
-                param="-vf \"setpts=PTS-STARTPTS,hqdn3d=1.5:1.5:6:6\" -plays 0",
+                param=_config.apngParam,
                 extension="apng",
                 image=image)
 
