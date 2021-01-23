@@ -169,8 +169,8 @@ def make_filename(nameFormat: str,
         imageExtension = splittedUrl[1]
         imageExtension = imageExtension.split('?')[0]
 
-    imageFile = re.sub(r'(\d+)_p(\d+)', lambda x: '%09d_p%03d'  % (int(x.group(1)), int(x.group(2))), imageFile)
-    imageFile = re.sub(r'(\d+)_ugoira', lambda x: '%09d_ugoira' %  int(x.group(1))                  , imageFile)
+    imageFile = re.sub(r'(\d+)_p(\d+)', lambda x: '%010d_p%03d'  % (int(x.group(1)), int(x.group(2))), imageFile)
+    imageFile = re.sub(r'(\d+)_ugoira', lambda x: '%010d_ugoira' %  int(x.group(1))                  , imageFile)
 
     # artist related
     nameFormat = nameFormat.replace('%artist%', replace_path_separator(artistInfo.artistName))
