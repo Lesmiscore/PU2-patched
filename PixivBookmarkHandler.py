@@ -278,19 +278,17 @@ def get_bookmarks(caller, config, hide, start_page=1, end_page=0, member_id=None
     i = start_page
     limit = 24
     offset = 0
-    is_json = False
+    is_json = True
+    if not member_id:
+        member_id = br._myId
 
     while True:
         if end_page != 0 and i > end_page:
             print('Limit reached')
             break
         PixivHelper.print_and_log('info', f'Exporting page {i}')
-        if member_id:
-            is_json = True
-            offset = limit * (i - 1)
-            url = f'https://www.pixiv.net/ajax/user/{member_id}/following?offset={offset}&limit={limit}'
-        else:
-            url = f'https://www.pixiv.net/bookmark.php?type=user&p={i}'
+        offset = limit * (i - 1)
+        url = f'https://www.pixiv.net/ajax/user/{member_id}/following?offset={offset}&limit={limit}'
         if hide:
             url = url + "&rest=hide"
         else:
