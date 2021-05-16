@@ -276,23 +276,32 @@ def get_bookmarks(caller, config, hide, start_page=1, end_page=0, member_id=None
     """Get User's bookmarked artists """
     total_list = list()
     i = start_page
-    limit = 24
+    limit = 48
     offset = 0
-    is_json = True
-    if not member_id:
-        member_id = br._myId
+    is_json = False
+    locale = "&lang=en"
+    if br._locale is not None and len(br._locale) > 0:
+        locale = f"&lang={br._locale}"
 
     while True:
         if end_page != 0 and i > end_page:
             print('Limit reached')
             break
         PixivHelper.print_and_log('info', f'Exporting page {i}')
-        offset = limit * (i - 1)
-        url = f'https://www.pixiv.net/ajax/user/{member_id}/following?offset={offset}&limit={limit}'
+        if member_id:
+            is_json = True
+            offset = limit * (i - 1)
+            url = f'https://www.pixiv.net/ajax/user/{member_id}/following?offset={offset}&limit={limit}'
+        else:
+            # Issue #942
+            member_id = br._myId
+            is_json = True
+            url = f'https://www.pixiv.net/ajax/user/{member_id}/following?offset={offset}&limit={limit}'
         if hide:
             url = url + "&rest=hide"
         else:
             url = url + "&rest=show"
+        url = url + locale
 
         PixivHelper.print_and_log('info', f"Source URL: {url}")
 
