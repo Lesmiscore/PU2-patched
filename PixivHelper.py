@@ -23,6 +23,8 @@ import urllib.parse
 import webbrowser
 import zipfile
 from datetime import date, datetime, timedelta, tzinfo
+from hashlib import md5, sha1, sha256
+from mmap import ACCESS_READ, mmap
 from pathlib import Path
 from typing import Union
 
@@ -33,6 +35,7 @@ import PixivConstant
 from PixivArtist import PixivArtist
 from PixivImage import PixivImage
 from PixivModelFanbox import FanboxArtist, FanboxPost
+import PixivException
 
 logger = None
 _config = None
@@ -177,6 +180,13 @@ def make_filename(nameFormat: str,
     imageFile = re.sub(r'(\d+)_p(\d+)', lambda x: '%010d_p%03d'  % (int(x.group(1)), int(x.group(2))), imageFile)
     imageFile = re.sub(r'(\d+)_ugoira', lambda x: '%010d_ugoira' %  int(x.group(1))                  , imageFile)
 
+    # Issue #940
+    if nameFormat.find('%force_extension') > -1:
+        to_replace_ext = re.findall("(%force_extension{.*}%)", nameFormat)
+        forced_ext = re.findall("{(.*)}", to_replace_ext[0])
+        nameFormat = nameFormat.replace(to_replace_ext[0], "")
+        imageExtension = forced_ext[0]
+
     # artist related
     nameFormat = nameFormat.replace('%artist%', replace_path_separator(artistInfo.artistName))
     nameFormat = nameFormat.replace('%member_id%', str(artistInfo.artistId))
@@ -300,6 +310,24 @@ def make_filename(nameFormat: str,
         nameFormat = nameFormat.strip() + '.' + imageExtension
 
     return nameFormat.strip()
+
+
+# Issue #956
+def get_hash(path: str, method="md5") -> str:
+    hash_str = ""
+    hash_method = None
+    if method == "md5":
+        hash_method = md5
+    elif method == "sha1":
+        hash_method = sha1
+    elif method == "sha256":
+        hash_method = sha256
+    else:
+        raise PixivException(msg=f"Invalid hash function {method}")
+
+    with open(path) as file, mmap(file.fileno(), 0, access=ACCESS_READ) as file:
+        hash_str = hash_method(file).hexdigest()
+    return hash_str
 
 
 def calculate_group(count):
