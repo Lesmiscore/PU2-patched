@@ -49,6 +49,8 @@
   - Export FANBOX post list
   - Delete FANBOX download history by member_id
   - Delete FANBOX download history by post_id
+  - Delete Sketch download history by member_id
+  - Delete Sketch download history by post_id
   - Clean Up Database (remove db entry if downloaded file is missing)
 - Export user bookmark (member_id) to a text files.
 
@@ -393,9 +395,9 @@ Please refer run with `--help` for latest information.
 - proxyaddress
 
   Proxy server address, use this format:
-  - http://<username>:<password>@<proxy_server>:<port> or
-  - socks5://<username>:<password>@<proxy_server>:<port> or
-  - socks4://<username>:<password>@<proxy_server>:<port>
+  - `http://<username>:<password>@<proxy_server>:<port>` or
+  - `socks5://<username>:<password>@<proxy_server>:<port>` or
+  - `socks4://<username>:<password>@<proxy_server>:<port>`
 - useragent
   
   Browser user agent to spoof. You can check it from https://www.whatismybrowser.com/detect/what-is-my-user-agent
@@ -540,6 +542,9 @@ Please refer run with `--help` for latest information.
 - useLocalTimezone
 
   Use local timezone when setting last modified timestamp/works date.
+- defaultSketchOption
+
+  Skip the "Include Pixiv Sketch" prompt when downloading by `member_id` option by using a default option. Set the value to `y` to always include sketches or `n` to exclude sketches from the download.
 
 ## [DownloadControl]
 - minFileSize
@@ -715,7 +720,7 @@ filenameFormatFanboxCover, filenameFormatFanboxContent and filenameFormatFanboxI
 Available for filenameFormat and filenameMangaFormat:
 ```
 -> %image_id%
-   Image id, in number.
+   Image id, in number. (Post id for FANBOX and sketches)
 -> %title%
    Image title, usually in japanese character.
 -> %tags%

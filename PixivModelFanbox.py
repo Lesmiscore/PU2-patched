@@ -65,8 +65,11 @@ class FanboxPost(object):
         self.linkToFile = dict()
 
         self.parsePost(page)
+        self.parse_post_details(page)
 
-        if not self.is_restricted:
+    def parse_post_details(self, page):
+        # Issue #1094
+        if not self.is_restricted and "body" in page:
             self.parseBody(page)
 
             if self.type == 'image':
@@ -106,13 +109,22 @@ class FanboxPost(object):
         if self._tzInfo is not None:
             self.worksDateDateTime = self.worksDateDateTime.astimezone(self._tzInfo)
 
-        self.type = jsPost["type"]
-        if self.type not in FanboxPost._supportedType:
-            raise PixivException(f"Unsupported post type = {self.type} for post = {self.imageId}", errorCode=9999, htmlPage=jsPost)
+        # Issue #1094
+        if "type" in jsPost:
+            self.type = jsPost["type"]
+            if self.type not in FanboxPost._supportedType:
+                raise PixivException(f"Unsupported post type = {self.type} for post = {self.imageId}", errorCode=9999, htmlPage=jsPost)
+        else:
+            # assume it is image post
+            self.type = "image"
 
         self.likeCount = int(jsPost["likeCount"])
-        if jsPost["body"] is None:
+
+        # Issue #1094
+        if "body" not in jsPost or jsPost["body"] is None:
             self.is_restricted = True
+        if "isRestricted" in jsPost:
+            self.is_restricted = jsPost["isRestricted"]
 
     def parseBody(self, jsPost):
         ''' Parse general data for text and article'''
@@ -265,6 +277,20 @@ class FanboxPost(object):
                             self.try_add(link.group(), self.descriptionUrlList)
                     else:
                         PixivHelper.print_and_log("warn", f"Found missing embedId: {embedId} for {self.imageId}")
+                elif block["type"] == "url_embed":  # Issue #1087
+                    urlEmbedId = block["urlEmbedId"]
+                    if urlEmbedId in jsPost["body"]["urlEmbedMap"]:
+                        embedType = jsPost["body"]["urlEmbedMap"][urlEmbedId]["type"]
+                        if embedType == "html.card":
+                            embedStr = jsPost["body"]["urlEmbedMap"][urlEmbedId]["html"]
+                            self.body_text += f"<p>{embedStr}</p>"
+                            links = _url_pattern.finditer(embedStr)
+                            for link in links:
+                                self.try_add(link.group(), self.descriptionUrlList)
+                        else:
+                            PixivHelper.print_and_log("warn", f"Unknown urlEmbedId's type: {urlEmbedId} for {self.imageId} => {embedType}")
+                    else:
+                        PixivHelper.print_and_log("warn", f"Found missing urlEmbedId: {urlEmbedId} for {self.imageId}")
 
         # Issue #476
         if "video" in jsPost["body"]:
@@ -362,6 +388,10 @@ class FanboxPost(object):
         if len(self.embeddedFiles) > 0:
             info.write("Urls          =\r\n")
             for link in self.embeddedFiles:
+                info.write(" - {0}\r\n".format(link))
+        if len(self.embeddedFiles) > 0:
+            info.write("descriptionUrlList =\r\n")
+            for link in self.descriptionUrlList:
                 info.write(" - {0}\r\n".format(link))
         info.close()
 

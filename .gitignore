@@ -29,6 +29,12 @@ testapp*/*
 pixivutil.log*
 .pytest_cache/*
 __pycache__/*
+.venv/
+lib/
+lib64
+bin/
+pyvenv.cfg
+*.orig
 
 .idea/*
 .vs/*

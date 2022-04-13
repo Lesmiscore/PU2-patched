@@ -105,6 +105,7 @@ class PixivConfig():
         ConfigItem("Settings", "dbPath", ""),
         ConfigItem("Settings", "setLastModified", True),
         ConfigItem("Settings", "useLocalTimezone", False),
+        ConfigItem("Settings", "defaultSketchOption", ""),
 
         ConfigItem("Filename",
                    "filenameFormat",
@@ -226,7 +227,6 @@ class PixivConfig():
         scheme = scheme or "http"
         value = f"{scheme}://{netloc}{port}"
         return {"http": value, "https": value}
-
 
     def loadConfig(self, path=None):
         if path is not None:

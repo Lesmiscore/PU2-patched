@@ -26,6 +26,7 @@ from PixivModelFanbox import FanboxArtist, FanboxPost
 from PixivModelSketch import SketchArtist, SketchPost
 from PixivNovel import MAX_LIMIT, NovelSeries, PixivNovel
 from PixivOAuth import PixivOAuth
+from PixivRanking import PixivNewIllust, PixivRanking
 from PixivTags import PixivTags
 
 defaultCookieJar = None
@@ -239,26 +240,40 @@ class PixivBrowser(mechanize.Browser):
             throw PixivException as server error
         '''
         url = self.fixUrl(url)
+        retry_count = 0
         while True:
             req = mechanize.Request(url)
             req.add_header('Referer', referer)
 
             read_page = self._get_from_cache(url)
             if read_page is None:
-                try:
-                    temp = self.open_with_retry(req)
-                    read_page = temp.read()
-                    read_page = read_page.decode('utf8')
-                    if enable_cache:
-                        self._put_to_cache(url, read_page)
-                    temp.close()
-                except urllib.error.HTTPError as ex:
-                    if ex.code in [403, 404, 503]:
-                        read_page = ex.read()
-                        raise PixivException(f"Failed to get page: {url} => {ex}", errorCode=PixivException.SERVER_ERROR)
-                    else:
-                        PixivHelper.print_and_log('error', f'Error at getPixivPage(): {sys.exc_info()}')
-                        raise PixivException(f"Failed to get page: {url}", errorCode=PixivException.SERVER_ERROR)
+                while True:
+                    try:
+                        temp = self.open_with_retry(req)
+                        read_page = temp.read()
+                        read_page = read_page.decode('utf8')
+                        if enable_cache:
+                            self._put_to_cache(url, read_page)
+                        temp.close()
+                        break
+                    except urllib.error.HTTPError as ex:
+                        if ex.code in [403, 404, 503]:
+                            read_page = ex.read()
+                            raise PixivException(f"Failed to get page: {url} => {ex}", errorCode=PixivException.SERVER_ERROR)
+                        else:
+                            PixivHelper.print_and_log('error', f'Error at getPixivPage(): {sys.exc_info()}')
+                            raise PixivException(f"Failed to get page: {url}", errorCode=PixivException.SERVER_ERROR)
+                    except BaseException:
+                        exc_value = sys.exc_info()[1]
+                        if retry_count < self._config.retry:
+                            print(exc_value, end=' ')
+                            for t in range(1, self._config.retryWait):
+                                print(t, end=' ')
+                                PixivHelper.print_delay(2)
+                            print('')
+                            retry_count = retry_count + 1
+                        else:
+                            raise PixivException(f"Failed to get page: {url}", errorCode=PixivException.SERVER_ERROR)
 
             if returnParsed:
                 parsedPage = BeautifulSoup(read_page, features="html5lib")
@@ -821,7 +836,8 @@ class PixivBrowser(mechanize.Browser):
                                                       member_id=member_id,
                                                       r18mode=r18mode,
                                                       blt=bookmark_count,
-                                                      type_mode=type_mode)
+                                                      type_mode=type_mode,
+                                                      locale=self._locale)
 
             PixivHelper.print_and_log('info', f'Looping... for {url}')
             response_page = self.getPixivPage(url, returnParsed=False)
@@ -888,11 +904,11 @@ class PixivBrowser(mechanize.Browser):
         if via == FanboxArtist.SUPPORTING:
             url = 'https://api.fanbox.cc/plan.listSupporting'
             PixivHelper.print_and_log('info', f'Getting supporting artists from {url}')
-            referer = "https://www.fanbox.cc/creators/supporting"
+            referer = "https://www.fanbox.cc/"
         elif via == FanboxArtist.FOLLOWING:
             url = 'https://api.fanbox.cc/creator.listFollowing'
             PixivHelper.print_and_log('info', f'Getting following artists from {url}')
-            referer = "https://www.fanbox.cc/creators/following"
+            referer = "https://www.fanbox.cc/"
 
         if url is not None:
             req = mechanize.Request(url)
@@ -968,7 +984,10 @@ class PixivBrowser(mechanize.Browser):
 
         # Issue #641
         if next_url is None or next_url == "":
-            url = f"https://api.fanbox.cc/post.listCreator?userId={artist.artistId}&limit=10"
+            # url = f"https://api.fanbox.cc/post.listCreator?userId={artist.artistId}&limit=10"
+            # Issue #1094
+            # https://api.fanbox.cc/post.listCreator?creatorId=onartworks&maxPublishedDatetime=2022-02-26%2015%3A57%3A17&maxId=3468213&limit=10
+            url = f"https://api.fanbox.cc/post.listCreator?creatorId={artist.creatorId}&limit=10"
         elif next_url.startswith("https://"):
             url = next_url
         else:
@@ -976,7 +995,7 @@ class PixivBrowser(mechanize.Browser):
 
         # Fix #494
         PixivHelper.print_and_log('info', 'Getting posts from ' + url)
-        referer = f"https://www.fanbox.cc/@{artist.creatorId}"
+        referer = "https://www.fanbox.cc/"
         req = mechanize.Request(url)
         req.add_header('Accept', 'application/json, text/plain, */*')
         req.add_header('Referer', referer)
@@ -990,9 +1009,10 @@ class PixivBrowser(mechanize.Browser):
         posts = artist.parsePosts(response)
         return posts
 
-    def fanboxUpdatePost(self, post):
+    def fanboxUpdatePost(self, post: FanboxPost):
         js = self.fanboxGetPostJsonById(post.imageId, post.parent)
         post.parsePost(js["body"])
+        post.parse_post_details(js["body"])
 
     def fanboxGetPostById(self, post_id):
         js = self.fanboxGetPostJsonById(post_id)
@@ -1179,7 +1199,10 @@ class PixivBrowser(mechanize.Browser):
         # Issue #1028
         locale = ""
         if self._locale is not None and len(self._locale) > 0:
-            locale = f"&lang={self._locale}"
+            if self._locale[0] == "/":
+                locale = f"&lang={self._locale[1:]}"
+            else:
+                locale = f"&lang={self._locale}"
         url = f"https://www.pixiv.net/ajax/follow_latest/illust?p={current_page}&mode={mode}{locale}"
         response = self.getPixivPage(url, returnParsed=False, enable_cache=True)
         PixivHelper.get_logger().info(f"Source URL: {url}")
@@ -1192,6 +1215,34 @@ class PixivBrowser(mechanize.Browser):
             pb.isLastPage = True
 
         return pb
+
+    def getPixivRanking(self, mode, page, date="", content="", filter=None) -> PixivRanking:
+        url = f"https://www.pixiv.net/ranking.php?mode={mode}"
+        if len(date) > 0:
+            url = f"{url}&date={date}"
+        if len(content) > 0:
+            url = f"{url}&content={content}"
+        url = f"{url}&p={page}&format=json"
+
+        response = self.getPixivPage(url, returnParsed=False, enable_cache=True)
+        result = PixivRanking(response, filter)
+        return result
+
+    def getNewIllust(self, last_id=0, limit=20, type_mode="illust", r18=False):
+        locale = ""
+        if self._locale is not None and len(self._locale) > 0:
+            if self._locale[0] == "/":
+                locale = f"&lang={self._locale[1:]}"
+            else:
+                locale = f"&lang={self._locale}"
+        if type_mode not in ('illust', 'manga'):
+            raise PixivException(f"Invalid type={type_mode} for PixivNewIllust, only 'illust' or 'manga' are accepted!", errorCode=PixivException.OTHER_ERROR)
+
+        # https://www.pixiv.net/ajax/illust/new?lastId=97097963&limit=20&type=illust&r18=true&lang=en
+        url = f"https://www.pixiv.net/ajax/illust/new?lastId={last_id}&limit={limit}&type={type_mode}&r18={str(r18).lower()}{locale}"
+        response = self.getPixivPage(url, returnParsed=False, enable_cache=True)
+        result = PixivNewIllust(response, type_mode)
+        return result
 
 
 def getBrowser(config=None, cookieJar=None):

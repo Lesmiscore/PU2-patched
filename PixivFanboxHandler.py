@@ -13,7 +13,7 @@ import PixivArtistHandler
 
 def process_fanbox_artist_by_id(caller, config, artist_id, end_page, title_prefix=""):
     config.loadConfig(path=caller.configfile)
-    br = PixivBrowserFactory.getBrowser()
+    br: PixivBrowserFactory.PixivBrowser = PixivBrowserFactory.getBrowser()
 
     caller.set_console_title(title_prefix)
     try:
@@ -138,7 +138,8 @@ def process_fanbox_post(caller, config, post: PixivModelFanbox.FanboxPost, artis
                                                                          config.overwrite,
                                                                          config.retry,
                                                                          config.backupOldFile,
-                                                                         image=post)
+                                                                         image=post,
+                                                                         download_from=PixivConstant.DOWNLOAD_FANBOX)
                 post_files.append((post.imageId, -1, filename))
                 PixivHelper.get_logger().debug("Download %s result: %s", filename, result)
             else:
@@ -192,8 +193,9 @@ def process_fanbox_post(caller, config, post: PixivModelFanbox.FanboxPost, artis
                                                                          False,  # config.overwrite somehow unable to get remote filesize
                                                                          config.retry,
                                                                          config.backupOldFile,
-                                                                         image=post)
-                if result == PixivConstant.PIXIVUTIL_ABORTED:
+                                                                         image=post,
+                                                                         download_from=PixivConstant.DOWNLOAD_FANBOX)
+                if result == PixivConstant.PIXIVUTIL_KEYBOARD_INTERRUPT:
                     raise KeyboardInterrupt()
                 post_files.append((post.imageId, current_page, filename))
 
