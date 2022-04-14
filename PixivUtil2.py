@@ -770,7 +770,9 @@ def menu_export_online_user_bookmark(opisvalid, args, options):
         arg = input("Member Id: ").rstrip("\r") or ''
         arg = arg.lower()
 
-    if arg.isdigit():
+    if not arg:
+        pass
+    elif arg.isdigit():
         member_id = arg
     else:
         print("Invalid args, member id is expected: ", arg)
