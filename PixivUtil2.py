@@ -189,7 +189,7 @@ def menu():
     print(' i. Import list file')
     print(' u. Ugoira re-encode')
     print(' r. Reload config.ini')
-    print(' p. Print config.ini')
+    print(' c. Print config.ini')
     print(' x. Exit')
 
     read_lists()
@@ -731,8 +731,9 @@ def menu_download_by_group_id(opisvalid, args, options):
                                             limit=limit,
                                             process_external=process_external)
 
-def menu_ugoira_reencode(opisvalid, args, options):
 
+def menu_ugoira_reencode(opisvalid, args, options):
+    __log__.info('Re-encode Ugoira (u)')
     msg = Fore.YELLOW + Style.NORMAL + f'WARNING: THIS ACTION CANNOT BE UNDO !' + Style.RESET_ALL
     PixivHelper.print_and_log(None, msg)
     msg = Fore.YELLOW + Style.NORMAL + f'You are about to to re-encode and overwrite all of your ugoira based on its zip file.' + Style.RESET_ALL
@@ -745,11 +746,12 @@ def menu_ugoira_reencode(opisvalid, args, options):
     if sure == 'y':
         PixivImageHandler.process_ugoira_local(sys.modules[__name__], __config__)
 
+
 def menu_export_database_images(opisvalid, args, options):
-    __log__.info('Export local database')
-    use_pixiv = "n"  # y|n|o
-    use_fanbox = "n" # y|n|o
-    use_sketch = "n" # y|n|o
+    __log__.info('Export local database (l)')
+    use_pixiv = "n"   # y|n|o
+    use_fanbox = "n"  # y|n|o
+    use_sketch = "n"  # y|n|o
     filename = "export-database.txt"
 
     if opisvalid:
@@ -788,8 +790,8 @@ def menu_export_database_images(opisvalid, args, options):
         if use_sketch not in ('y', 'n', 'o'):
             PixivHelper.print_and_log("error", f"Invalid args for Sketch database: {arg}, valid values are [y/n/o].")
             return
-    
     PixivBookmarkHandler.export_image_table(sys.modules[__name__], filename, use_pixiv, use_fanbox, use_sketch)
+
 
 def menu_export_online_bookmark(opisvalid, args, options):
     __log__.info('Export Followed Artists mode (e).')
@@ -1199,7 +1201,7 @@ def setup_option_parser():
     __valid_options = ('1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18',
                        'f1', 'f2', 'f3', 'f4', 'f5',
                        's1', 's2',
-                       'l', 'd', 'e', 'm', 'b', 'p')
+                       'l', 'd', 'e', 'm', 'b', 'p', 'c')
     parser = OptionParser()
 
     # need to keep the whitespace to adjust the output for --help
@@ -1435,7 +1437,7 @@ def main_loop(ewd, op_is_valid, selection, np_is_valid_local, args, options):
                 __dbManager__.main()
             elif selection == 'r':
                 menu_reload_config()
-            elif selection == 'p':
+            elif selection == 'c':
                 menu_print_config()
             elif selection == 'i':
                 menu_import_list()
